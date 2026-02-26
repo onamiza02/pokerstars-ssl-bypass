@@ -523,7 +523,7 @@ static void hook_SSL_free(void *ssl) {
 // ║  (Bypass + Logging for dynamically discovered classes)     ║
 // ╚════════════════════════════════════════════════════════════╝
 
-static void hookRuntimePatterns(void) {
+__attribute__((unused)) static void hookRuntimePatterns(void) {
     unsigned int classCount = 0;
     Class *classes = objc_copyClassList(&classCount);
 
@@ -600,7 +600,7 @@ static void hookRuntimePatterns(void) {
 }
 
 // Hook Swift auth classes via ObjC runtime names
-static void hookSwiftAuthClasses(void) {
+__attribute__((unused)) static void hookSwiftAuthClasses(void) {
     // MfAuthenticator (_TtC12MfAppLibrary15MfAuthenticator)
     unsigned int classCount = 0;
     Class *classes = objc_copyClassList(&classCount);
