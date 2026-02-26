@@ -7,7 +7,7 @@ include $(THEOS)/makefiles/common.mk
 TWEAK_NAME = PokerStarsSSLBypass
 
 PokerStarsSSLBypass_FILES = Tweak.x
-PokerStarsSSLBypass_CFLAGS = -fobjc-arc
+PokerStarsSSLBypass_CFLAGS = -fobjc-arc -Wno-unused-function -Wno-unused-variable
 PokerStarsSSLBypass_FRAMEWORKS = Foundation Security UIKit WebKit
 PokerStarsSSLBypass_LOGOS_DEFAULT_GENERATOR = internal
 
