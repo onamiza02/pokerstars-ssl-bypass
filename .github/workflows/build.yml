@@ -51,20 +51,30 @@ jobs:
           set -e
           DEB=$(find packages -name "*.deb" | head -1)
           echo "Fixing: $DEB"
-          mkdir -p /tmp/deb-fix
-          dpkg-deb -x "$DEB" /tmp/deb-fix/
-          dpkg-deb -e "$DEB" /tmp/deb-fix/DEBIAN/
-          DYLIB=$(find /tmp/deb-fix -name "*.dylib" | head -1)
+          mkdir -p /tmp/deb-fix && cd /tmp/deb-fix
+          ar x "$OLDPWD/$DEB"
+          mkdir -p data control
+          # Extract data (try lzma first, then gz)
+          if [ -f data.tar.lzma ]; then
+            tar --lzma -xf data.tar.lzma -C data/
+          elif [ -f data.tar.gz ]; then
+            tar xzf data.tar.gz -C data/
+          elif [ -f data.tar.xz ]; then
+            tar xJf data.tar.xz -C data/
+          fi
+          tar xzf control.tar.gz -C control/ 2>/dev/null || tar xf control.tar.* -C control/
+          DYLIB=$(find data -name "*.dylib" | head -1)
           echo "Before:"
-          otool -L "$DYLIB" | head -10
+          otool -L "$DYLIB"
           install_name_tool -change "/Library/MobileSubstrate/MobileSubstrate.dylib" "/usr/lib/libsubstrate.dylib" "$DYLIB"
           echo "After:"
-          otool -L "$DYLIB" | head -10
-          # Re-sign after modification
+          otool -L "$DYLIB"
           ldid -S "$DYLIB"
-          # Rebuild .deb
-          rm "$DEB"
-          dpkg-deb -b /tmp/deb-fix "$DEB"
+          # Rebuild .deb with ar
+          cd data && tar czf ../data.tar.gz . && cd ..
+          cd control && tar czf ../control.tar.gz . && cd ..
+          rm -f "$OLDPWD/$DEB"
+          ar rcs "$OLDPWD/$DEB" debian-binary control.tar.gz data.tar.gz
           echo "Fixed: $DEB"
 
       - name: List Output
