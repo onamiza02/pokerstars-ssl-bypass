@@ -621,8 +621,6 @@ static void hookSwiftAuthClasses(void) {
                 if ([selStr hasPrefix:@"loginWith"] && [selStr containsString:@"password"]) {
                     Method m = methods[j];
                     IMP origIMP = method_getImplementation(m);
-                    const char *types = method_getTypeEncoding(m);
-
                     // Log the selector name when called
                     IMP newIMP = imp_implementationWithBlock(^(id self, id arg1, id arg2) {
                         psLog(@"AUTH", @"★ MfAuthenticator.%@ called: arg1=%@ arg2=%@", selStr, arg1, arg2);
