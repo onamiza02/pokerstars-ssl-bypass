@@ -8,6 +8,7 @@ TWEAK_NAME = PokerStarsSSLBypass
 
 PokerStarsSSLBypass_FILES = Tweak.x
 PokerStarsSSLBypass_CFLAGS = -fobjc-arc
-PokerStarsSSLBypass_FRAMEWORKS = Foundation
+PokerStarsSSLBypass_FRAMEWORKS = Foundation Security UIKit WebKit
+PokerStarsSSLBypass_LOGOS_DEFAULT_GENERATOR = internal
 
 include $(THEOS_MAKE_PATH)/tweak.mk
