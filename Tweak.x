@@ -427,28 +427,29 @@ static void hook_SSL_free(void *ssl) {
     if (parameters) psLog(@"HTTP", @"  params: %@", parameters);
     if (headers) psLog(@"HTTP", @"  headers: %@", headers);
 
-    return %orig(method, URLString, parameters, headers, uploadProgress, downloadProgress,
-        ^(NSURLSessionDataTask *task, id resp) {
-            NSHTTPURLResponse *httpResp = (NSHTTPURLResponse *)task.response;
-            psLog(@"HTTP", @"← %@ %@ → %ld", method, URLString, (long)httpResp.statusCode);
-            // Log response body (limit size)
-            NSString *respStr = nil;
-            if ([resp isKindOfClass:[NSDictionary class]] || [resp isKindOfClass:[NSArray class]]) {
-                NSData *json = [NSJSONSerialization dataWithJSONObject:resp options:0 error:nil];
-                respStr = [[NSString alloc] initWithData:json encoding:NSUTF8StringEncoding];
-            } else if ([resp isKindOfClass:[NSData class]]) {
-                respStr = [[NSString alloc] initWithData:resp encoding:NSUTF8StringEncoding];
-            }
-            if (respStr) {
-                if (respStr.length > 2000) respStr = [[respStr substringToIndex:2000] stringByAppendingString:@"..."];
-                psLog(@"HTTP", @"  body: %@", respStr);
-            }
-            if (success) success(task, resp);
-        },
-        ^(NSURLSessionDataTask *task, NSError *error) {
-            psLog(@"HTTP", @"✗ %@ %@ → %@", method, URLString, error.localizedDescription);
-            if (failure) failure(task, error);
-        });
+    void (^wrappedSuccess)(NSURLSessionDataTask *, id) = ^(NSURLSessionDataTask *task, id resp) {
+        NSHTTPURLResponse *httpResp = (NSHTTPURLResponse *)task.response;
+        psLog(@"HTTP", @"← %@ %@ → %ld", method, URLString, (long)httpResp.statusCode);
+        NSString *respStr = nil;
+        if ([resp isKindOfClass:[NSDictionary class]] || [resp isKindOfClass:[NSArray class]]) {
+            NSData *json = [NSJSONSerialization dataWithJSONObject:resp options:0 error:nil];
+            respStr = [[NSString alloc] initWithData:json encoding:NSUTF8StringEncoding];
+        } else if ([resp isKindOfClass:[NSData class]]) {
+            respStr = [[NSString alloc] initWithData:resp encoding:NSUTF8StringEncoding];
+        }
+        if (respStr) {
+            if (respStr.length > 2000) respStr = [[respStr substringToIndex:2000] stringByAppendingString:@"..."];
+            psLog(@"HTTP", @"  body: %@", respStr);
+        }
+        if (success) success(task, resp);
+    };
+
+    void (^wrappedFailure)(NSURLSessionDataTask *, NSError *) = ^(NSURLSessionDataTask *task, NSError *error) {
+        psLog(@"HTTP", @"✗ %@ %@ → %@", method, URLString, error.localizedDescription);
+        if (failure) failure(task, error);
+    };
+
+    return %orig(method, URLString, parameters, headers, uploadProgress, downloadProgress, wrappedSuccess, wrappedFailure);
 }
 %end
 
