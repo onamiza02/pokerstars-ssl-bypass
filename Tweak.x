@@ -770,12 +770,12 @@ static void hookSwiftAuthClasses(void) {
         fn = dlsym(RTLD_DEFAULT, "SSL_free");
         if (fn) { MSHookFunction(fn, (void *)hook_SSL_free, (void **)&orig_SSL_free); psLog(@"INIT", @"✓ SSL_free"); }
 
-        // Runtime hooks — delayed to ensure all frameworks loaded
+        // Runtime hooks — DISABLED for crash bisect
         dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.5 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
-            hookRuntimePatterns();
-            hookSwiftAuthClasses();
-            psLog(@"INIT", @"Runtime + Swift auth hooks installed!");
-            psLog(@"INIT", @"═══ ALL HOOKS ACTIVE — Logging to /var/tmp/ps_traffic.log ═══");
+            // hookRuntimePatterns();
+            // hookSwiftAuthClasses();
+            psLog(@"INIT", @"Runtime hooks DISABLED (bisect mode)");
+            psLog(@"INIT", @"═══ CORE HOOKS ACTIVE — Logging to /var/tmp/ps_traffic.log ═══");
         });
 
         psLog(@"INIT", @"Core hooks installed! Waiting for runtime hooks...");
