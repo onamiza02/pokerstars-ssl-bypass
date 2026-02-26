@@ -621,14 +621,26 @@ static void hookSwiftAuthClasses(void) {
                 if ([selStr hasPrefix:@"loginWith"] && [selStr containsString:@"password"]) {
                     Method m = methods[j];
                     IMP origIMP = method_getImplementation(m);
-                    // Log the selector name when called
-                    IMP newIMP = imp_implementationWithBlock(^(id self, id arg1, id arg2) {
-                        psLog(@"AUTH", @"★ MfAuthenticator.%@ called: arg1=%@ arg2=%@", selStr, arg1, arg2);
-                        // Call original — use objc_msgSend since we have the selector
-                        ((void(*)(id, SEL, id, id))origIMP)(self, sel, arg1, arg2);
-                    });
-                    method_setImplementation(m, newIMP);
-                    psLog(@"INIT", @"Hooked: %@.%@", name, selStr);
+                    NSUInteger argCount = [[selStr componentsSeparatedByString:@":"] count] - 1;
+
+                    IMP newIMP = nil;
+                    if (argCount == 2) {
+                        newIMP = imp_implementationWithBlock(^(id self, id arg1, id arg2) {
+                            psLog(@"AUTH", @"★ MfAuth.%@ arg1=%@ arg2=%@", selStr, arg1, arg2);
+                            ((void(*)(id, SEL, id, id))origIMP)(self, sel, arg1, arg2);
+                        });
+                    } else if (argCount == 3) {
+                        newIMP = imp_implementationWithBlock(^(id self, id arg1, id arg2, id arg3) {
+                            psLog(@"AUTH", @"★ MfAuth.%@ arg1=%@ arg2=%@ arg3=%@", selStr, arg1, arg2, arg3);
+                            ((void(*)(id, SEL, id, id, id))origIMP)(self, sel, arg1, arg2, arg3);
+                        });
+                    }
+                    if (newIMP) {
+                        method_setImplementation(m, newIMP);
+                        psLog(@"INIT", @"Hooked(%lu): %@.%@", (unsigned long)argCount, name, selStr);
+                    } else {
+                        psLog(@"INIT", @"Skip(%lu): %@.%@", (unsigned long)argCount, name, selStr);
+                    }
                 }
 
                 // Hook fetchIDPToken
@@ -651,13 +663,31 @@ static void hookSwiftAuthClasses(void) {
                 if ([selStr containsString:@"updateIDPToken"]) {
                     Method m = methods[j];
                     IMP origIMP = method_getImplementation(m);
+                    NSUInteger argCount = [[selStr componentsSeparatedByString:@":"] count] - 1;
 
-                    IMP newIMP = imp_implementationWithBlock(^(id self, id arg1, id arg2, id arg3) {
-                        psLog(@"AUTH", @"★ IDP TOKEN UPDATE: token=%@ accessToken=%@ loginId=%@", arg1, arg2, arg3);
-                        ((void(*)(id, SEL, id, id, id))origIMP)(self, sel, arg1, arg2, arg3);
-                    });
-                    method_setImplementation(m, newIMP);
-                    psLog(@"INIT", @"Hooked: %@.%@", name, selStr);
+                    IMP newIMP = nil;
+                    if (argCount == 1) {
+                        newIMP = imp_implementationWithBlock(^(id self, id arg1) {
+                            psLog(@"AUTH", @"★ IDP: %@ arg1=%@", selStr, arg1);
+                            ((void(*)(id, SEL, id))origIMP)(self, sel, arg1);
+                        });
+                    } else if (argCount == 2) {
+                        newIMP = imp_implementationWithBlock(^(id self, id arg1, id arg2) {
+                            psLog(@"AUTH", @"★ IDP: %@ arg1=%@ arg2=%@", selStr, arg1, arg2);
+                            ((void(*)(id, SEL, id, id))origIMP)(self, sel, arg1, arg2);
+                        });
+                    } else if (argCount == 3) {
+                        newIMP = imp_implementationWithBlock(^(id self, id arg1, id arg2, id arg3) {
+                            psLog(@"AUTH", @"★ IDP: %@ arg1=%@ arg2=%@ arg3=%@", selStr, arg1, arg2, arg3);
+                            ((void(*)(id, SEL, id, id, id))origIMP)(self, sel, arg1, arg2, arg3);
+                        });
+                    }
+                    if (newIMP) {
+                        method_setImplementation(m, newIMP);
+                        psLog(@"INIT", @"Hooked(%lu): %@.%@", (unsigned long)argCount, name, selStr);
+                    } else {
+                        psLog(@"INIT", @"Skip(%lu): %@.%@", (unsigned long)argCount, name, selStr);
+                    }
                 }
             }
             if (methods) free(methods);
