@@ -1,0 +1,108 @@
+name: Build iOS Tweak
+
+on:
+  push:
+    branches: [ master, main ]
+  pull_request:
+    branches: [ master, main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-14
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Cache Theos
+        id: cache-theos
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/theos
+          key: theos-${{ runner.os }}-v3
+
+      - name: Setup Theos
+        if: steps.cache-theos.outputs.cache-hit != 'true'
+        run: |
+          set -e
+          # Install Theos
+          git clone --recursive https://github.com/theos/theos.git ~/theos
+
+          # Download iOS SDKs
+          cd ~/theos
+          curl -sL https://github.com/theos/sdks/archive/master.tar.gz | tar xz
+          mv sdks-master/*.sdk sdks/ 2>/dev/null || true
+          rm -rf sdks-master
+
+      - name: Install Dependencies
+        run: |
+          brew install ldid make
+
+      - name: Build Tweak
+        run: |
+          export THEOS=~/theos
+          export PATH=$THEOS/bin:$PATH
+          gmake package FINALPACKAGE=1 2>&1
+
+      - name: List Output
+        run: |
+          ls -la packages/ || echo "No packages dir"
+          find . -name "*.deb" -type f 2>/dev/null
+
+      - name: Upload .deb
+        uses: actions/upload-artifact@v4
+        with:
+          name: PokerStarsSSLBypass
+          path: packages/*.deb
+          if-no-files-found: error
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: PokerStarsSSLBypass
+          path: dist/
+
+      - name: Get version
+        id: version
+        run: echo "version=1.0.0-$(date +%Y%m%d%H%M%S)" >> $GITHUB_OUTPUT
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.version.outputs.version }}
+          name: "PokerStars SSL Bypass v${{ steps.version.outputs.version }}"
+          body: |
+            ## PokerStars SSL Pinning Bypass
+
+            **Target:** PokerStars iOS v3.90.1 (ro.pokerstarsmobile.www)
+
+            ### Install
+            ```bash
+            # Via Filza/SSH:
+            dpkg -i com.onamiza.pokerstarsbypass_*.deb
+            killall -9 pokerstars
+
+            # Via Sileo/Zebra — add repo or install .deb directly
+            ```
+
+            ### What's bypassed
+            - 7 SSL pinning layers (SecTrust, AFNetworking, Starscream, Apollo, LivePerson, GeoComply, NSURLSession)
+            - OpenSSL 3.3.2 (CommLib2a) certificate verification
+            - Jailbreak detection (URL schemes + file paths + C-level)
+            - Debugger detection (sysctl, ptrace, getppid)
+            - GeoComply RASP (dylib scan, port scan, hook detection)
+            - AppsFlyer sanity flags
+            - Integrity violation checks
+          files: dist/*.deb
+          draft: false
+          prerelease: false

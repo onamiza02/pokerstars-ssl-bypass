@@ -1,6 +1,8 @@
 *.app/
 *.ipa
 *.deb
-*.plist
 .DS_Store
 node_modules/
+.theos/
+packages/
+obj/

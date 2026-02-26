@@ -1,7 +1,9 @@
 # PokerStars SSL Pinning Bypass
 
-Frida-based SSL pinning bypass for **PokerStars iOS v3.90.1** (Build 80957)
+**iOS Tweak** (.deb) + Frida script for **PokerStars iOS v3.90.1** (Build 80957)
 Bundle ID: `ro.pokerstarsmobile.www`
+
+[![Build iOS Tweak](https://github.com/onamiza02/pokerstars-ssl-bypass/actions/workflows/build.yml/badge.svg)](https://github.com/onamiza02/pokerstars-ssl-bypass/actions/workflows/build.yml)
 
 ## Bypasses
 
@@ -33,35 +35,56 @@ Bundle ID: `ro.pokerstarsmobile.www`
 
 ### Total: 65 Interceptor hooks, 1351 lines
 
+## Install (Tweak .deb)
+
+### Download
+Go to [Releases](https://github.com/onamiza02/pokerstars-ssl-bypass/releases) and download the latest `.deb`.
+
+### Install on device
+```bash
+# SSH into device
+dpkg -i com.onamiza.pokerstarsbypass_1.0.0_iphoneos-arm.deb
+killall -9 SpringBoard
+```
+
+### Build from source
+```bash
+# Requires Theos (https://theos.dev)
+export THEOS=~/theos
+git clone https://github.com/onamiza02/pokerstars-ssl-bypass.git
+cd pokerstars-ssl-bypass
+make package
+# Output: packages/com.onamiza.pokerstarsbypass_1.0.0_iphoneos-arm.deb
+
+# Install directly to device
+make package install THEOS_DEVICE_IP=<device-ip>
+```
+
+### GitHub Actions
+Every push auto-builds the `.deb` via GitHub Actions. Download from Actions tab → Artifacts.
+
 ## Requirements
 
-- Jailbroken iOS device (or corellium/palera1n)
-- [Frida](https://frida.re/) installed on device and host
-- PokerStars IPA v3.90.1 (ro.pokerstarsmobile.www)
+- Jailbroken iOS 15+ (palera1n, Dopamine, unc0ver, etc.)
+- Substrate / Substitute / ElleKit / libhooker
+- PokerStars app v3.90.1 (ro.pokerstarsmobile.www)
 
-## Usage
+## Alternative: Frida Script
 
-### Spawn mode (recommended)
+If you prefer Frida over a native tweak:
+
 ```bash
+# Spawn mode
 frida -U -f ro.pokerstarsmobile.www -l pokerstars_ssl_bypass.js --no-pause
-```
 
-### Attach mode (if already running)
-```bash
+# Attach mode
 frida -U -n pokerstars -l pokerstars_ssl_bypass.js
-```
 
-### With proxy (Burp/Charles)
-```bash
-# 1. Set proxy on device (Wi-Fi settings → HTTP Proxy → Manual)
-# 2. Install Burp/Charles CA certificate on device
-# 3. Run the bypass:
+# With Burp/Charles proxy
+# 1. Set proxy on device (Wi-Fi → HTTP Proxy → Manual)
+# 2. Install proxy CA certificate
+# 3. Run:
 frida -U -f ro.pokerstarsmobile.www -l pokerstars_ssl_bypass.js --no-pause
-```
-
-### Objection
-```bash
-objection -g ro.pokerstarsmobile.www explore --startup-script pokerstars_ssl_bypass.js
 ```
 
 ## Configuration
@@ -138,7 +161,12 @@ All delegate methods that call completion handlers use `Interceptor.replace` (fu
 
 | File | Description |
 |------|-------------|
-| `pokerstars_ssl_bypass.js` | Main Frida bypass script (1351 lines, 65 hooks) |
+| `Tweak.x` | Native iOS tweak (Logos/ObjC) — auto-loads via Substrate |
+| `Makefile` | Theos build config |
+| `control` | Debian package metadata |
+| `PokerStarsSSLBypass.plist` | Bundle filter (only injects into PokerStars) |
+| `.github/workflows/build.yml` | GitHub Actions — auto-build .deb on push |
+| `pokerstars_ssl_bypass.js` | Frida bypass script (alternative) |
 | `POKERSTARS_FULL_ANALYSIS.md` | Complete IPA reverse engineering analysis |
 
 ## Disclaimer

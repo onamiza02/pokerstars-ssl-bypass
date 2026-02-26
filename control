@@ -1,0 +1,9 @@
+Package: com.onamiza.pokerstarsbypass
+Name: PokerStars SSL Bypass
+Version: 1.0.0
+Architecture: iphoneos-arm
+Description: Complete SSL pinning bypass for PokerStars iOS v3.90.1 — 7 SSL layers + OpenSSL 3.3.2 + 5 anti-detection layers
+Depends: mobilesubstrate (>= 0.9.5000)
+Maintainer: onamiza02
+Author: onamiza02
+Section: Tweaks
