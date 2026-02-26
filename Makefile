@@ -7,11 +7,7 @@ include $(THEOS)/makefiles/common.mk
 TWEAK_NAME = PokerStarsSSLBypass
 
 PokerStarsSSLBypass_FILES = Tweak.x
-PokerStarsSSLBypass_CFLAGS = -fobjc-arc -Wno-unused-variable -Wno-deprecated-declarations
-PokerStarsSSLBypass_FRAMEWORKS = Security UIKit Foundation WebKit
-PokerStarsSSLBypass_LIBRARIES = substrate
+PokerStarsSSLBypass_CFLAGS = -fobjc-arc
+PokerStarsSSLBypass_FRAMEWORKS = Foundation
 
 include $(THEOS_MAKE_PATH)/tweak.mk
-
-after-PokerStarsSSLBypass-all::
-	install_name_tool -change "/Library/MobileSubstrate/MobileSubstrate.dylib" "/usr/lib/libsubstrate.dylib" $(THEOS_OBJ_DIR)/PokerStarsSSLBypass.dylib
