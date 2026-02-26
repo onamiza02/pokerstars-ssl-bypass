@@ -728,56 +728,13 @@ __attribute__((unused)) static void hookSwiftAuthClasses(void) {
 
 %ctor {
     @autoreleasepool {
-        // Resolve MSHookFunction via dlsym BEFORE anything else
-        initHookAPI();
-
-        // Init logger
+        // BISECT: NO HOOKS AT ALL — just logger
         initLogger();
-        psLog(@"INIT", @"PokerStars Traffic Logger v2.1 loading...");
+        psLog(@"INIT", @"BISECT: NO HOOKS — logger only");
         psLog(@"INIT", @"Bundle: %@", [[NSBundle mainBundle] bundleIdentifier]);
-        psLog(@"INIT", @"MSHookFunction: %s", _MSHookFn ? "RESOLVED" : "NOT FOUND");
+        psLog(@"INIT", @"If login still crashes, it's NOT our hooks");
 
-        initJBPaths();
-        %init;
-
-        // C function hooks — anti-detection
-        MSHookFunction((void *)access, (void *)hook_access, (void **)&orig_access);
-        MSHookFunction((void *)stat, (void *)hook_stat, (void **)&orig_stat);
-        MSHookFunction((void *)lstat, (void *)hook_lstat, (void **)&orig_lstat);
-        MSHookFunction((void *)sysctl, (void *)hook_sysctl, (void **)&orig_sysctl);
-        MSHookFunction((void *)_dyld_get_image_name, (void *)hook_dyld_name, (void **)&orig_dyld_name);
-        void *ptrace_ptr = dlsym(RTLD_DEFAULT, "ptrace");
-        if (ptrace_ptr) MSHookFunction(ptrace_ptr, (void *)hook_ptrace, (void **)&orig_ptrace);
-
-        // OpenSSL bypass hooks
-        void *fn;
-        fn = dlsym(RTLD_DEFAULT, "X509_verify_cert");
-        if (fn) { MSHookFunction(fn, (void *)hook_X509_verify_cert, (void **)&orig_X509_verify_cert); psLog(@"INIT", @"✓ X509_verify_cert"); }
-        fn = dlsym(RTLD_DEFAULT, "X509_check_host");
-        if (fn) { MSHookFunction(fn, (void *)hook_X509_check_host, (void **)&orig_X509_check_host); psLog(@"INIT", @"✓ X509_check_host"); }
-        fn = dlsym(RTLD_DEFAULT, "X509_STORE_CTX_init");
-        if (fn) { MSHookFunction(fn, (void *)hook_X509_STORE_CTX_init, (void **)&orig_X509_STORE_CTX_init); psLog(@"INIT", @"✓ X509_STORE_CTX_init"); }
-        fn = dlsym(RTLD_DEFAULT, "SSL_get_verify_result");
-        if (fn) { MSHookFunction(fn, (void *)hook_ssl_get_verify, (void **)&orig_ssl_get_verify); psLog(@"INIT", @"✓ SSL_get_verify_result"); }
-
-        // ★ CRITICAL: SSL_read / SSL_write — captures ALL CommLib2a plaintext
-        fn = dlsym(RTLD_DEFAULT, "SSL_read");
-        if (fn) { MSHookFunction(fn, (void *)hook_SSL_read, (void **)&orig_SSL_read); psLog(@"INIT", @"★ SSL_read hooked — CommLib2a traffic capture active"); }
-        fn = dlsym(RTLD_DEFAULT, "SSL_write");
-        if (fn) { MSHookFunction(fn, (void *)hook_SSL_write, (void **)&orig_SSL_write); psLog(@"INIT", @"★ SSL_write hooked — CommLib2a traffic capture active"); }
-        fn = dlsym(RTLD_DEFAULT, "SSL_new");
-        if (fn) { MSHookFunction(fn, (void *)hook_SSL_new, (void **)&orig_SSL_new); psLog(@"INIT", @"✓ SSL_new"); }
-        fn = dlsym(RTLD_DEFAULT, "SSL_free");
-        if (fn) { MSHookFunction(fn, (void *)hook_SSL_free, (void **)&orig_SSL_free); psLog(@"INIT", @"✓ SSL_free"); }
-
-        // Runtime hooks — DISABLED for crash bisect
-        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.5 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
-            // hookRuntimePatterns();
-            // hookSwiftAuthClasses();
-            psLog(@"INIT", @"Runtime hooks DISABLED (bisect mode)");
-            psLog(@"INIT", @"═══ CORE HOOKS ACTIVE — Logging to /var/tmp/ps_traffic.log ═══");
-        });
-
-        psLog(@"INIT", @"Core hooks installed! Waiting for runtime hooks...");
+        // NOTE: %init is SKIPPED — no ObjC or C function hooks active
+        // %init;
     }
 }
