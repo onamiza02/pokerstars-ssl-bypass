@@ -1,1 +1,1 @@
-{ Filter = { Bundles = ( "com.partypoker.poker" ); }; }
+{ Filter = { Bundles = ( "ro.pokerstarsmobile.www" ); }; }
