@@ -49,12 +49,13 @@ jobs:
       - name: Fix library paths for rootless
         run: |
           set -e
+          WORKSPACE="$PWD"
           DEB=$(find packages -name "*.deb" | head -1)
           echo "Fixing: $DEB"
+          DEB_FULL="$WORKSPACE/$DEB"
           mkdir -p /tmp/deb-fix && cd /tmp/deb-fix
-          ar x "$OLDPWD/$DEB"
+          ar x "$DEB_FULL"
           mkdir -p data control
-          # Extract data (try lzma first, then gz)
           if [ -f data.tar.lzma ]; then
             tar --lzma -xf data.tar.lzma -C data/
           elif [ -f data.tar.gz ]; then
@@ -66,16 +67,15 @@ jobs:
           DYLIB=$(find data -name "*.dylib" | head -1)
           echo "Before:"
           otool -L "$DYLIB"
-          install_name_tool -change "/Library/MobileSubstrate/MobileSubstrate.dylib" "/usr/lib/libsubstrate.dylib" "$DYLIB"
+          install_name_tool -change "@rpath/CydiaSubstrate.framework/CydiaSubstrate" "/usr/lib/libsubstrate.dylib" "$DYLIB"
           echo "After:"
           otool -L "$DYLIB"
           ldid -S "$DYLIB"
-          # Rebuild .deb with ar
           cd data && tar czf ../data.tar.gz . && cd ..
           cd control && tar czf ../control.tar.gz . && cd ..
-          rm -f "$OLDPWD/$DEB"
-          ar rcs "$OLDPWD/$DEB" debian-binary control.tar.gz data.tar.gz
-          echo "Fixed: $DEB"
+          rm -f "$DEB_FULL"
+          ar rcs "$DEB_FULL" debian-binary control.tar.gz data.tar.gz
+          echo "Fixed: $DEB_FULL"
 
       - name: List Output
         run: |
