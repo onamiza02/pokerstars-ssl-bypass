@@ -333,6 +333,9 @@ static int hook_X509_STORE_CTX_init(void *ctx, void *store, void *x509, void *ch
     return ret > 0 ? ret : 1;
 }
 
+static long (*orig_ssl_get_verify_result)(void *);
+static long hook_ssl_get_verify_result(void *ssl) { return 0; /* X509_V_OK */ }
+
 // ============================================================
 // Runtime ObjC hooks (pattern-matched classes)
 // ============================================================
@@ -419,8 +422,7 @@ static void hookRuntimePatterns(void) {
         // SSL_get_verify_result / SSL_CTX_set_verify (may not be exported)
         fn = dlsym(RTLD_DEFAULT, "SSL_get_verify_result");
         if (fn) {
-            static long (*orig_fn)(void *);
-            MSHookFunction(fn, (void *)(long (*)(void *))^long(void *ssl) { return 0; }, (void **)&orig_fn);
+            MSHookFunction(fn, (void *)hook_ssl_get_verify_result, (void **)&orig_ssl_get_verify_result);
         }
 
         // Runtime pattern hooks (delayed to ensure all frameworks loaded)
