@@ -46,6 +46,27 @@ jobs:
           export PATH=$THEOS/bin:$PATH
           gmake package FINALPACKAGE=1 2>&1
 
+      - name: Fix library paths for rootless
+        run: |
+          set -e
+          DEB=$(find packages -name "*.deb" | head -1)
+          echo "Fixing: $DEB"
+          mkdir -p /tmp/deb-fix
+          dpkg-deb -x "$DEB" /tmp/deb-fix/
+          dpkg-deb -e "$DEB" /tmp/deb-fix/DEBIAN/
+          DYLIB=$(find /tmp/deb-fix -name "*.dylib" | head -1)
+          echo "Before:"
+          otool -L "$DYLIB" | head -10
+          install_name_tool -change "/Library/MobileSubstrate/MobileSubstrate.dylib" "/usr/lib/libsubstrate.dylib" "$DYLIB"
+          echo "After:"
+          otool -L "$DYLIB" | head -10
+          # Re-sign after modification
+          ldid -S "$DYLIB"
+          # Rebuild .deb
+          rm "$DEB"
+          dpkg-deb -b /tmp/deb-fix "$DEB"
+          echo "Fixed: $DEB"
+
       - name: List Output
         run: |
           ls -la packages/ || echo "No packages dir"
